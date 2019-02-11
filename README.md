@@ -61,3 +61,26 @@ The `controller` queries a database and returns the retrieved data to the `view`
 `intent_name` is an additional field the view can use to inform the user, what the RiQue extracted out of his utterance.
 In case of failure the `error` field is filled.
 
+## Address for requests
+
+Depending on the machine you are using, the controller is running on the default port `5000` and the address `http://localhost:5000/api`.
+
+An example for testing with curl looks like this:
+
+`curl -XPOST http://localhost:5000/api 
+-H "Content-type: application/json;charset=utf-8" 
+-H "Accept: application/json; charset=UTF-8"
+-d {
+  recipient_id: 'default',
+  application_state: 
+    {
+      focused_object: '',
+      focused_object_type: '',
+      selected_object: 'rce core component',
+      selected_object_type: 'bundle',
+      gesture_type: ''
+    },
+  user_utterance: 'show information fir this bundle'
+} | python -m json.tool`
+
+The last part ` | python -m json.tool` is optional and just for beautifying the controllers response.
