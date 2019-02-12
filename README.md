@@ -16,7 +16,9 @@ In our case the view is implemented of the Microsoft HoloLens in [this project](
 ## Install and start server
 
 1. `pip install Flask` 
-2. `FLASK_APP=main.py flask run` 
+2. `pip install requests`
+3. `FLASK_APP=main.py flask run` 
+4. See if the application is running by going to [https://localhost:5005/](https://localhost:5005/)
 
 ## defined interfaces
 
