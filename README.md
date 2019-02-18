@@ -35,7 +35,7 @@ The `controller` expects the following format of input:
       selected_object_type: 'bundle',
       gesture_type: 'double tap'
     },
-  user_utterance: 'show information fir this bundle'
+  user_utterance: 'show information for this bundle'
 }
 ```
 
