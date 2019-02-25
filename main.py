@@ -32,11 +32,11 @@ def catch_all(path):
 # processes the given data and returns a JSON containing the requested data
 @app.route("/api", methods=['POST', 'PUT'])
 def process_speech_input():
-    application_state = request.json['application_state']
-    user_utterance = request.json['user_utterance']
+    application_state = request.json.get('application_state', None)
+    user_utterance = request.json.get('user_utterance', None)
 
     # Gesture type is ignored at the moment but could be used in former development
-    gesture_type = request.json['gesture_type']
+    gesture_type = request.json.get('gesture_type', None)
     state = {}
     if application_state:
         if application_state['focused_object']:
@@ -87,7 +87,7 @@ def request_speech_component_core(utterance):
 
 # builds response concerning out of the retrieved data
 def build_response(speech_component_response):
-    recipient_id = speech_component_response[0]['recipient_id']
+    recipient_id = speech_component_response[0].get('recipient_id', None)
     if recipient_id is None:
         recipient_id = sender_id
 
@@ -104,6 +104,9 @@ def build_response(speech_component_response):
     speech_component_response_json = json.loads(speech_component_response[0]['text'])
     natural_language_response = 'here is what i found'
     intent_name = speech_component_response_json['intent']['name']
+    confidence = speech_component_response_json['intent']['confidence']
+    if confidence < 0.5:
+        natural_language_response = 'I am not sure if I got you right. ' + natural_language_response
     error = speech_component_response_json.get('error', '')
 
     if error:
