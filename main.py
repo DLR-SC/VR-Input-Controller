@@ -50,6 +50,23 @@ def process_speech_input():
     return build_response(speech_component_response)
 
 
+# This function returns all intents used by the speech processing service.
+# This information might be useful for developing a frontend
+@app.route("/api/intents", methods=['GET'])
+def get_all_intents():
+    headers = {'Accept': 'application/json'}
+    try:
+        response = requests.get('http://localhost:5005/domain', headers=headers)
+        intents = []
+        for item in json.loads(response.text)['intents']:
+            for key in dict(item):
+                intents.append(key)
+        return str(intents)
+    except requests.exceptions.RequestException as e:
+        print(e)
+        abort(404)
+
+
 # if given the context will be passed to the natural language component before the utterance is processed
 def set_speech_component_context(state):
     request_array = []
