@@ -69,20 +69,8 @@ Depending on the machine you are using, the controller is running on the default
 
 An example for testing with curl looks like this:
 
-`curl -XPOST http://localhost:5000/api 
--H "Content-type: application/json;charset=utf-8" 
--H "Accept: application/json; charset=UTF-8"
--d {
-  recipient_id: 'default',
-  application_state: 
-    {
-      focused_object: '',
-      focused_object_type: '',
-      selected_object: 'rce core component',
-      selected_object_type: 'bundle',
-      gesture_type: ''
-    },
-  user_utterance: 'show information fir this bundle'
-} | python -m json.tool`
+`
+curl -XPOST http://localhost:5000/api -H "Content-type: application/json;charset=utf-8" -H "Accept: application/json;charset=UTF-8" -d '{"recipient_id": "", "application_state": {"focused_object": "", "focused_object_type": "", "selected_object": "", "selected_object_type":""}, "user_utterance": "give total of all buildings", "gesture_type": ""}' | python -m json.tool
+`
 
 The last part ` | python -m json.tool` is optional and just for beautifying the controllers response.
