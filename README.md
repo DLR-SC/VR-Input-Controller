@@ -74,3 +74,5 @@ curl -XPOST http://localhost:5000/api -H "Content-type: application/json;charset
 `
 
 The last part ` | python -m json.tool` is optional and just for beautifying the controllers response.
+
+You can also access all intents, used by the speech processing service via this url `curl -XGET http://localhost:5000/api/intents -H "Accept: application/json;charset=UTF-8"`
