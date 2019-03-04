@@ -142,9 +142,19 @@ def build_response(speech_component_response):
 
     speech_component_response_json = json.loads(speech_component_response[0]['text'])
     natural_language_response = 'here is what i found'
-    print(speech_component_response_json)
-    intent_name = speech_component_response_json['intent']['name']
-    confidence = speech_component_response_json['intent']['confidence']
+    intent = speech_component_response_json.get('intent', None)
+    if intent:
+        intent_name = intent['name']
+        confidence = intent['confidence']
+    else:
+        return jsonify(dict(
+            recipient_id=recipient_id,
+            intent_name='',
+            natural_language_response='',
+            error='The NLP service could find what you intent to do',
+            data=''))
+
+        abort(500)
     if confidence < 0.5:
         natural_language_response = 'I am not sure if I got you right. ' + natural_language_response
     error = speech_component_response_json.get('error', '')
