@@ -3,6 +3,8 @@ from flask import request
 from flask import jsonify
 import requests
 import json
+import logging
+import sys
 
 app = Flask(__name__)
 test = {}
@@ -12,6 +14,8 @@ help_text = "This is a sample controller for a system consisting of " \
             "It is running on this machine and can be accessed via the port 5005." \
             "If you receive a 404, please check if your natural language processing component and your database " \
             "is up and running. You can test this controller without setting any other services if you use the "
+
+logging.basicConfig(filename='controller_logger.log', level=logging.DEBUG)
 
 
 @app.route("/", strict_slashes=False)
@@ -48,10 +52,10 @@ def process_speech_input():
     gesture_type = request.json.get('gesture_type', None)
     state = {}
     if application_state:
-        if application_state['focused_object']:
+        if application_state.get('focused_object_type', None):
             state = {application_state['focused_object_type']: application_state['focused_object']}
         else:
-            if application_state['selected_object']:
+            if application_state.get('selected_object_type', None):
                 state = {application_state['selected_object_type']: application_state['selected_object']}
     if state:
         set_speech_component_context(state)
@@ -75,7 +79,7 @@ def get_all_intents():
                 intents.append(key)
         return str(intents)
     except requests.exceptions.RequestException as e:
-        print(e)
+        logging.error(e)
         abort(404)
 
 
@@ -85,19 +89,18 @@ def set_speech_component_context(state):
     :param state: Application context.
     """
     request_array = []
-    for state_attribute in state:
-        for key, value in state_attribute.iterItems():
-            request_data = {
-                'event': 'slot',
-                'name': key,
-                'value': value
-            }
-            request_array.append(request_data)
-
-    response_slot_setting = requests.put('localhost:5005/conversations/' + sender_id + '/tracker/events', request_array)
-
+    for key, value in state.items():
+        request_data = {
+            'event': 'slot',
+            'name': key,
+            'value': value
+        }
+    request_array.append(request_data)
+    url = 'http://localhost:5005/conversations/' + sender_id + '/tracker/events'
+    data = json.dumps(request_array)
+    response_slot_setting = requests.put(url, data=data)
     if response_slot_setting:
-        print('successfully updated slots')
+        logging.debug('successfully updated slots')
     else:
         abort(404)
 
@@ -116,7 +119,7 @@ def request_speech_component_core(utterance):
                                  headers=headers)
         return json.loads(response.text)
     except requests.exceptions.RequestException as e:
-        print(e)
+        logging.error(e)
         abort(404)
 
 
@@ -126,58 +129,67 @@ def build_response(speech_component_response):
     :param speech_component_response: The response made by the speech_component.
     :return: A JSON with recipient_id, intent_name, natural_language_response, data and error.
     """
-    recipient_id = speech_component_response[0].get('recipient_id', None)
-    if recipient_id is None:
-        recipient_id = sender_id
+    if speech_component_response:
+        recipient_id = speech_component_response[0].get('recipient_id', None)
+        if recipient_id is None:
+            recipient_id = sender_id
 
-    if not speech_component_response[0]['text'][0] == "{":
-        natural_language_response = speech_component_response[0]['text']
-        return jsonify({
-            "recipient_id": recipient_id,
-            "intent_name": "",
-            "natural_language_response": natural_language_response,
-            "error": "",
-            "data": ""
-        })
+        if not speech_component_response[0]['text'][0] == "{":
+            natural_language_response = speech_component_response[0]['text']
+            return jsonify({
+                "recipient_id": recipient_id,
+                "intent_name": "",
+                "natural_language_response": natural_language_response,
+                "error": "",
+                "data": ""
+            })
 
-    speech_component_response_json = json.loads(speech_component_response[0]['text'])
-    natural_language_response = 'here is what i found'
-    intent = speech_component_response_json.get('intent', None)
-    if intent:
-        intent_name = intent['name']
-        confidence = intent['confidence']
-    else:
-        return jsonify(dict(
-            recipient_id=recipient_id,
-            intent_name='',
-            natural_language_response='',
-            error='The NLP service could find what you intent to do',
-            data=''))
+        speech_component_response_json = json.loads(speech_component_response[0]['text'])
+        natural_language_response = 'here is what i found'
+        intent = speech_component_response_json.get('intent', None)
+        if intent:
+            intent_name = intent['name']
+            confidence = intent['confidence']
+        else:
+            return jsonify(dict(
+                recipient_id=recipient_id,
+                intent_name='',
+                natural_language_response='',
+                error='The NLP service could find what you intent to do',
+                data=''))
 
-        abort(500)
-    if confidence < 0.5:
-        natural_language_response = 'I am not sure if I got you right. ' + natural_language_response
-    error = speech_component_response_json.get('error', '')
+            abort(500)
+        if confidence < 0.5:
+            natural_language_response = 'I am not sure if I got you right. ' + natural_language_response
+        error = speech_component_response_json.get('error', '')
 
-    if error:
+        if error:
+            return jsonify({
+                "recipient_id": recipient_id,
+                "intent_name": intent_name,
+                "natural_language_response": natural_language_response,
+                "error": error,
+                "data": ""
+            })
+
+        database_query = speech_component_response_json["query"]
+        database_response = query_graph_db(database_query)
+
         return jsonify({
             "recipient_id": recipient_id,
             "intent_name": intent_name,
             "natural_language_response": natural_language_response,
             "error": error,
+            "data": convert_db_response(database_response)
+        })
+    else:
+        return jsonify({
+            "recipient_id": sender_id,
+            "intent_name": '',
+            "natural_language_response": '',
+            "error": "unknown error appeared",
             "data": ""
         })
-
-    database_query = speech_component_response_json["query"]
-    database_response = query_graph_db(database_query)
-
-    return jsonify({
-        "recipient_id": recipient_id,
-        "intent_name": intent_name,
-        "natural_language_response": natural_language_response,
-        "error": error,
-        "data": convert_db_response(database_response)
-    })
 
 
 def convert_db_response(db_response):
@@ -201,16 +213,17 @@ def query_graph_db(graph_query):
     :return: The database response.
     """
     graph_query = graph_query.replace('"', '\\"')
-
+    logging.debug('graph_query: ', graph_query)
     payload = '{"query": "' + graph_query + '"}'
     headers = {'Content-type': 'application/json;charset=utf-8', 'Accept': 'application/json;charset=utf-8'}
     try:
         response = requests.post('http://localhost:7474/db/data/cypher',
                                  data=payload,
                                  headers=headers)
+        logging.debug("neo4j response:" + response.text)
         return response.text
     except requests.exceptions.RequestException as e:
-        print(e)
+        logging.error(e)
         abort(404)
 
 

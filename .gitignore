@@ -6,3 +6,5 @@ __pycache__/main\.cpython-36\.pyc
 venv
 
 *.pyc
+
+controller_logger.log
