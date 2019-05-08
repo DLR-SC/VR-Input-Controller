@@ -4,7 +4,6 @@ from flask import jsonify
 import requests
 import json
 import logging
-import sys
 
 app = Flask(__name__)
 test = {}
@@ -117,6 +116,7 @@ def request_speech_component_core(utterance):
         response = requests.post('http://localhost:5005/webhooks/rest/webhook',
                                  data=payload,
                                  headers=headers)
+        logging.debug('response: ' + response.text)
         return json.loads(response.text)
     except requests.exceptions.RequestException as e:
         logging.error(e)
@@ -213,7 +213,7 @@ def query_graph_db(graph_query):
     :return: The database response.
     """
     graph_query = graph_query.replace('"', '\\"')
-    logging.debug('graph_query: ', graph_query)
+    logging.debug('graph_query: ' + graph_query)
     payload = '{"query": "' + graph_query + '"}'
     headers = {'Content-type': 'application/json;charset=utf-8', 'Accept': 'application/json;charset=utf-8'}
     try:
