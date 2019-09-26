@@ -133,17 +133,19 @@ def build_response(speech_component_response):
         recipient_id = speech_component_response[0].get('recipient_id', None)
         if recipient_id is None:
             recipient_id = sender_id
-
-        speech_component_response_json = json.loads(speech_component_response[0]['text'])
-        if not speech_component_response[0]['text'][0] == "{":
-            natural_language_response = speech_component_response[0]['text']
-            return jsonify({
+        
+        natural_language_response = json.loads(speech_component_response[0]['text'])
+        
+        return jsonify({
                 "recipient_id": recipient_id,
-                "intent_name": "",
-                "natural_language_response":"",
+                "intent_name": natural_language_response.get('intent_name', None),
+                "natural_language_response": "This is what I found for you..",
                 "error": "",
-                "data": speech_component_response_json
+                "data": natural_language_response,
             })
+        '''
+        if not speech_component_response[0]['text'][0] == "{":
+        '''
 
         speech_component_response_json = json.loads(speech_component_response[0]['text'])
         natural_language_response = 'here is what i found'
@@ -156,8 +158,7 @@ def build_response(speech_component_response):
                 recipient_id=recipient_id,
                 intent_name='',
                 natural_language_response='',
-                error=speech_component_response_json,
-                #error='The NLP service could find what you intent to do',
+                error='The NLP service could find what you intent to do',
                 data=''))
 
             abort(500)
