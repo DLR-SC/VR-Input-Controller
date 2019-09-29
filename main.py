@@ -44,6 +44,11 @@ def process_speech_input():
     processes the given data and returns a JSON containing the requested data.
     :return: a JSON containing the requested data from the database.
     """
+    
+    if 'live' in request.json:
+        print("Received live signal")
+        return 'accept'
+    
     application_state = request.json.get('application_state', None)
     user_utterance = request.json.get('user_utterance', None)
 
@@ -117,6 +122,7 @@ def request_speech_component_core(utterance):
                                  data=payload,
                                  headers=headers)
         logging.debug('response: ' + response.text)
+        res = json.loads(response.text)
         return json.loads(response.text)
     except requests.exceptions.RequestException as e:
         logging.error(e)
@@ -129,23 +135,21 @@ def build_response(speech_component_response):
     :param speech_component_response: The response made by the speech_component.
     :return: A JSON with recipient_id, intent_name, natural_language_response, data and error.
     """
+    print("Speech component response: ", speech_component_response)
     if speech_component_response:
         recipient_id = speech_component_response[0].get('recipient_id', None)
         if recipient_id is None:
             recipient_id = sender_id
         
+        #if type(speech_component_response[0]['text']) is dict:
         natural_language_response = json.loads(speech_component_response[0]['text'])
-        
         return jsonify({
                 "recipient_id": recipient_id,
                 "intent_name": natural_language_response.get('intent_name', None),
                 "natural_language_response": "This is what I found for you..",
-                "error": "",
+                "error": None,
                 "data": natural_language_response,
             })
-        '''
-        if not speech_component_response[0]['text'][0] == "{":
-        '''
 
         speech_component_response_json = json.loads(speech_component_response[0]['text'])
         natural_language_response = 'here is what i found'
@@ -175,59 +179,14 @@ def build_response(speech_component_response):
                 "data": ""
             })
 
-        database_query = speech_component_response_json["query"]
-        database_response = query_graph_db(database_query)
-
-        return jsonify({
-            "recipient_id": recipient_id,
-            "intent_name": intent_name,
-            "natural_language_response": natural_language_response,
-            "error": error,
-            "data": convert_db_response(database_response)
-        })
     else:
         return jsonify({
             "recipient_id": sender_id,
-            "intent_name": '',
+            "intent_name": None,
             "natural_language_response": '',
-            "error": "unknown error appeared",
+            "error": None,
             "data": ""
         })
-
-
-def convert_db_response(db_response):
-    """
-    A simple parser, to extract the the needed information from the database response.
-    :param db_response: The database response.
-    :return: The data field from the database response if not empty.
-    """
-    if db_response:
-        db_response = json.loads(db_response)
-        if len(db_response['data']) == 0:
-            return ''
-        return db_response['data'][0]
-    return ""
-
-
-def query_graph_db(graph_query):
-    """
-    Queries the neo4j Database and returns as text.
-    :param graph_query: The cypher query for the database.
-    :return: The database response.
-    """
-    graph_query = graph_query.replace('"', '\\"')
-    logging.debug('graph_query: ' + graph_query)
-    payload = '{"query": "' + graph_query + '"}'
-    headers = {'Content-type': 'application/json;charset=utf-8', 'Accept': 'application/json;charset=utf-8'}
-    try:
-        response = requests.post('http://localhost:7474/db/data/cypher',
-                                 data=payload,
-                                 headers=headers)
-        logging.debug("neo4j response:" + response.text)
-        return response.text
-    except requests.exceptions.RequestException as e:
-        logging.error(e)
-        abort(404)
 
 
 @app.route("/test", methods=['POST', 'PUT'])
