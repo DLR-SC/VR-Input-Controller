@@ -67,10 +67,15 @@ In case of failure the `error` field is filled.
 
 Depending on the machine you are using, the controller is running on the default port `5000` and the address `http://localhost:5000/api`.
 
-An example for testing with curl looks like this:
+An example for testing with curl in linux looks like this:
 
 `
 curl -XPOST http://localhost:5000/api -H "Content-type: application/json;charset=utf-8" -H "Accept: application/json;charset=UTF-8" -d '{"recipient_id": "", "application_state": {"focused_object": "", "focused_object_type": "", "selected_object": "", "selected_object_type":""}, "user_utterance": "give total of all buildings", "gesture_type": ""}' | python -m json.tool
+`
+
+`
+For windows try out:
+curl -X POST http://localhost:5000/api -H "Content-type: application/json;charset=utf-8" -H "Accept: application/json;charset=UTF-8" -d "{\"recipient_id\": \"\", \"application_state\": {\"focused_object\": \"\", \"focused_object_type\": \"\", \"selected_object\": \"\", \"selected_object_type\":\"\"}, \"user_utterance\": \"hello\"}"
 `
 
 The last part ` | python -m json.tool` is optional and just for beautifying the controllers response.
